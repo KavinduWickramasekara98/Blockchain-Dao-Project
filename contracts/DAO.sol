@@ -7,46 +7,80 @@ contract DAO is AccessControl, ReentrancyGuard {
     //imutable(cannot change) hash is linked to the role
     bytes32 private imutable CONTRIBUTOR_ROLE = keccak256("CONTRIBUTOR_ROLE");
     bytes32 private imutable STACKHOLDER_ROLE = keccak256("STACKHOLDER_ROLE");
-
-    struct Proposal {
-        uint id;
-        address proposer;
+uint256 private imutable MINIMUM_CONTRIBUTION = 1 ether;
+unint32 private imutable VOTING_PERIOD = 2 minutes;
+uint32 totalProposalCount;
+uint256 public daoBalance;
+    struct ProposalStruct {
+        uint256 id;
+        uint256 amount;
+        uint256 dutation;
+        uint256 upvotes;
+        uint256 downvotes;
+        string title;
         string description;
-        uint votes;
-        uint end;
-        bool    
+        bool passed;
+        bool paid;
+        address payable beneficiary;
+        address proposer;
+        address executor;    
     }
 
-    uint public proposalCount;
-    mapping(uint => Proposal) public proposals;
+    struct votedStruct {
+        address voter;
+        uint256 timestamp;
+        bool chosen;
+    }   
+    event Action(
+        address indexed initiator,
+        byetes32 role,
+        string message,
+        address indexed beneficiary,
+        uint256 amount
+    );
 
-    constructor() {
-        _setupRole(DEFAULT_STACKHOLDER_ROLE, msg.sender);
-        _setupRole(STACKHOLDER_ROLE, msg.sender);
-        _setupRole(CONTRIBUTOR_ROLE, msg.sender);
+    mapping(uint => ProposalStruct) public raisedProposals;
+    mapping(address=>uint256[]) private stackholderVotes;
+    mapping (uint256 => votedStruct[]) private votedOn;
+    mapping(address=>uint256) private contributors;
+    mapping(address=>uint256) private stackholders; 
+//hasRole from AccessControl contract
+    modifier stackholderOnly(string memory message) {
+        require(hasRole(STACKHOLDER_ROLE,msg.sender),message);
+        _;          
+        
     }
+//hasRole from AccessControl contract
+    modifier contributorOnly(string memory message) {
+        require(hasRole(CONTRIBUTOR_ROLE,msg.sender),message);
+        _;          
+        
+    }
+function createProposal(
+    string memory _title,
+    string memory _description,
+    address beneficiary,
+    uint256 _amount
+)external stackholderOnly("stackholders only"){
+    {
 
-    function addProposal(string memory _description) external {
-        require(hasRole(STACKHOLDER_ROLE, msg.sender), "DAO: must have member role to add proposal");
-        proposals[proposalCount] = Proposal(proposalCount, msg.sender, _description, 0, block.timestamp + 1 days, false);
-        proposalCount++;
-    }
+        uint32 proposalId = totalProposalCount++;
+        ProposalStruct storage proposal = raisedProposals[proposalId];
+        proposal.idproposalId;
+        proposal.amount = _amount;
+        proposal.duration = block.timestamp + VOTING_PERIOD;
+        proposal.title = _title;
+        proposal.description = _description;
+        proposal.beneficiary = payable(beneficiary);
+        proposal.proposer =payable(msg.sender);
 
-    function vote(uint _id) external {
-        require(hasRole(STACKHOLDER_ROLE, msg.sender), "DAO: must have stackholder role to vote");
-        require(proposals[_id].end > block.timestamp, "DAO: voting period has ended");
-        require(!proposals[_id].voters[msg.sender], "DAO: voter has already voted");
-        proposals[_id].votes++;
-        proposals[_id].voters[msg.sender] = true;
     }
-
-    function executeProposal(uint _id) external nonReentrant {
-        require(hasRole(CONTRIBUTOR_ROLE, msg.sender), "DAO: must have contributor role to execute proposal");
-        require(proposals[_id].end < block.timestamp, "DAO: voting period has not ended");
-        require(!proposals[_id].executed, "DAO: proposal has already been executed");
-        if(proposals[_id].votes > proposalCount / 2) {
-            proposals[_id].executed = true;
-           
-        }
-    }
+    emit Action(
+        msg.sender,
+        STACKHOLDER_ROLE,
+        "created proposal",
+        beneficiary,
+        _amount
+    )
+    
 }
