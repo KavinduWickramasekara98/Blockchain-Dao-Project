@@ -82,5 +82,19 @@ function createProposal(
         beneficiary,
         _amount
     )
-    
+    function handleVoting(ProposalStruct storage proposal) private {
+       if(
+        proposal.passed ||
+        proposal.duration <= block.timestamp
+       ){
+        proposal.passed = true;
+        revert("proposal duration has been expired");
+       }
+       uint256[] memory tempVotes = stackholderVotes[msg.sender];
+       for(uint votes = 0; i < votes.tempVotes; votes++){
+           if(proposal.id == tempVotes[votes]){
+               revert("you have already voted on this proposal");
+           }
+       }
+    }
 }
