@@ -97,7 +97,7 @@ function createProposal(
            }
        }
     }
-    function Vote(uint256 _id, bool _vote) external stackholderOnly("stackholders only"){
+    function Vote(uint256 _id, bool _vote) external stackholderOnly("stackholders only")
         returns(VotedStruct memory){
         ProposalStruct storage proposal = raisedProposals[_id];
         handleVoting(proposal);
@@ -113,5 +113,12 @@ function createProposal(
             votedStruct(msg.sender,block.timestamp,_vote)
             );
         }
-    }
+        emit Action(
+            msg.sender,
+            STACKHOLDER_ROLE,
+            "voted on proposal",
+            proposal.beneficiary,
+            amount
+        );
+        return VoteStruct(msg.sender,block.timestamp,_vote);
 }
