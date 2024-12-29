@@ -97,4 +97,21 @@ function createProposal(
            }
        }
     }
+    function Vote(uint256 _id, bool _vote) external stackholderOnly("stackholders only"){
+        returns(VotedStruct memory){
+        ProposalStruct storage proposal = raisedProposals[_id];
+        handleVoting(proposal);
+        uint256 vote = _vote ? 1 : 0;
+        if(_vote){
+            proposal.upvotes += 1;
+        }else{
+            proposal.downvotes += 1;
+        }
+        stackholderVotes[msg.sender].push(proposal.id);
+        //_vote is chosen or not chosen
+        votedOn[proposal.id].push(
+            votedStruct(msg.sender,block.timestamp,_vote)
+            );
+        }
+    }
 }
