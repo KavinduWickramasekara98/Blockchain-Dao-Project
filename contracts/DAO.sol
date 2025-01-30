@@ -121,4 +121,47 @@ function createProposal(
             amount
         );
         return VoteStruct(msg.sender,block.timestamp,_vote);
+    }
+    //internal for only this contract can use it
+    function payTo(
+        address to,
+        uint256 amount
+    ) internal returns(bool){
+        require(daoBalance >= amount,"insufficient funds");
+        daoBalance -= amount;
+        (bool success,)= payable(to).call{value:amount}("");
+        require(success,"failed to send ether");
+        return true;
+    }
+    function payBenificiary(uint proposalId) public stackholderOnly("stackholders only") nonReentrant
+    returns(uint256){
+        ProposalStruct storage proposal = raisedProposals[proposalId];
+        
+        require(daoBalance >= proposal.amount,"insufficient funds");
+        if(proposal.paid){
+            revert("proposal has already been paid");
+        }
+        if(proposal.upvotes <= proposal.downvotes){
+            revert("proposal has not passed");
+        }
+        if(proposal.duration >= block.timestamp){
+            revert("proposal duration has expired");
+        }
+
+        proposal.paid = true;
+        proposal.executor = msg.sender;
+        daoBalance -= proposal.amount;
+        //for update balanece and then pay to beneficiary for reentrancy
+        payTo(proposal.beneficiary,proposal.amount);
+        emit Action(
+            msg.sender,
+            STACKHOLDER_ROLE,
+            "paid beneficiary",
+            proposal.beneficiary,
+            proposal.amount
+        );
+        return daoBalance;
+    }
+
+    
 }
